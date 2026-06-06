@@ -30,7 +30,7 @@ npm start
 ```
 
 ### 4. Use the app
-- Open [http://localhost:3000](http://localhost:3000)
+- Open [http://localhost:000](http://localhost:3000)
 - Paste your OpenRouter API key in the **API KEY** field
 - Pick a model (free ones are marked)
 - Start chatting!
