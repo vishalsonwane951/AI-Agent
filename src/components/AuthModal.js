@@ -26,6 +26,9 @@ export default function AuthModal({ onAuth }) {
         body: JSON.stringify(body),
       });
 
+            console.log("Url", `${process.env.REACT_APP_BACKEND_URL}${endpoint}`)
+
+
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Authentication failed');
