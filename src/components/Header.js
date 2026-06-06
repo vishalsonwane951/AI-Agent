@@ -43,26 +43,6 @@ export default function Header({ apiKey, setApiKey, model, setModel, onClear, ha
           )}
         </div>
       </div>
-
-      <div className="config-bar">
-        <div className="config-field">
-          <label>API KEY</label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder="sk-or-v1-your-openrouter-key..."
-          />
-        </div>
-        <div className="config-field model-field">
-          <label>MODEL</label>
-          <select value={model} onChange={e => setModel(e.target.value)}>
-            {MODELS.map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
     </header>
   );
 }

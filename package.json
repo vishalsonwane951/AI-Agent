@@ -1,31 +1,31 @@
-{
-  "name": "vishal-agent",
-  "version": "1.0.0",
-  "private": true,
-  "description": "A sleek, production-grade AI chat agent built with React.js, powered by OpenRouter.",
-  "license": "ISC",
-  "author": "",
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-markdown": "^9.0.1",
-    "react-scripts": "^5.0.1",
-    "remark-gfm": "^4.0.0"
-  },
-  "devDependencies": {
-    "jest": "^27.5.1"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead"
-    ],
-    "development": [
-      "last 1 chrome version"
-    ]
+  {
+    "name": "vishal-agent",
+    "version": "1.0.0",
+    "private": true,
+    "description": "A sleek, production-grade AI chat agent built with React.js, powered by OpenRouter.",
+    "license": "ISC",
+    "author": "",
+    "scripts": {
+      "start": "react-scripts start",
+      "build": "react-scripts build"
+    },
+    "dependencies": {
+      "react": "^18.3.1",
+      "react-dom": "^18.3.1",
+      "react-markdown": "^9.0.1",
+      "react-scripts": "^5.0.1",
+      "remark-gfm": "^4.0.0"
+    },
+    "devDependencies": {
+      "jest": "^27.5.1"
+    },
+    "browserslist": {
+      "production": [
+        ">0.2%",
+        "not dead"
+      ],
+      "development": [
+        "last 1 chrome version"
+      ]
+    }
   }
-}

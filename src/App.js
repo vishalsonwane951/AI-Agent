@@ -3,32 +3,114 @@ import Header, { MODELS } from './components/Header';
 import Message, { TypingMessage } from './components/Message';
 import Welcome from './components/Welcome';
 import ChatInput from './components/ChatInput';
-import { useOpenRouter } from './hooks/useOpenRouter';
+import AuthModal from './components/AuthModal';
+import ChatSidebar from './components/ChatSidebar';
+import Settings from './components/Settings';
+import { useBackendChat } from './hooks/useBackendChat';
 import './App.css';
 
 export default function App() {
-  const [apiKey, setApiKey] = useState('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');
-  const [model, setModel] = useState(MODELS[0].value);
+  const [token, setToken] = useState(localStorage.getItem('authToken'));
+  const [userId, setUserId] = useState(localStorage.getItem('userId'));
+  const [username, setUsername] = useState(localStorage.getItem('username'));
+  const [chatId, setChatId] = useState(null);
+  const [chats, setChats] = useState([]);
+  const [model, setModel] = useState(localStorage.getItem('savedModel') || MODELS[0].value);
   const [messages, setMessages] = useState([]);
-  const [history, setHistory] = useState([]);
   const [input, setInput] = useState('');
+  const [userApiKey, setUserApiKey] = useState(localStorage.getItem('savedApiKey') || '');
+  const [showSettings, setShowSettings] = useState(false);
   const bottomRef = useRef(null);
 
-  const { sendMessage, loading, error, setError } = useOpenRouter();
+  const { sendMessage, createChat, loading, error, setError } = useBackendChat();
+
+  // Load saved settings on auth
+  useEffect(() => {
+    if (token) {
+      loadChats();
+      loadSettings();
+    }
+  }, [token]);
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/settings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.preferredModel) {
+          setModel(data.preferredModel);
+          localStorage.setItem('savedModel', data.preferredModel);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    }
+  }
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  async function loadChats() {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChats(data);
+      }
+    } catch (err) {
+      console.error('Failed to load chats:', err);
+    }
+  }
+
+  function handleAuth(authData) {
+    setToken(authData.token);
+    setUserId(authData.userId);
+    setUsername(authData.username);
+    localStorage.setItem('authToken', authData.token);
+    localStorage.setItem('userId', authData.userId);
+    localStorage.setItem('username', authData.username);
+  }
+
+  function handleLogout() {
+    setToken(null);
+    setUserId(null);
+    setUsername(null);
+    setChatId(null);
+    setMessages([]);
+    setChats([]);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+  }
+
+  async function handleNewChat() {
+    if (!input.trim()) return;
+    setError('');
+
+    const reply = await createChat({
+      token,
+      model,
+      userMessage: input,
+      userApiKey: userApiKey || undefined,
+    });
+
+    if (reply) {
+      setChatId(reply.chatId);
+      setMessages(reply.messages.map(m => ({ ...m, ts: m.timestamp || Date.now() })));
+      setInput('');
+      loadChats();
+    }
+  }
+
   async function handleSend(text) {
     const prompt = (text || input).trim();
-    if (!prompt || loading) return;
-
-    if (!apiKey.trim()) {
-      setError('Please enter your OpenRouter API key in the field above.');
-      return;
-    }
+    if (!prompt || loading || !chatId) return;
 
     setInput('');
     setError('');
@@ -36,48 +118,121 @@ export default function App() {
     const userMsg = { role: 'user', content: prompt, ts: Date.now() };
     setMessages(prev => [...prev, userMsg]);
 
-    const newHistory = [...history, { role: 'user', content: prompt }];
-    setHistory(newHistory);
+    const updatedMessages = await sendMessage({
+      token,
+      chatId,
+      userMessage: prompt,
+      userApiKey: userApiKey || undefined,
+    });
 
-    const reply = await sendMessage({ apiKey, model, history, userMessage: prompt });
-
-    if (reply) {
-      const aiMsg = { role: 'assistant', content: reply, ts: Date.now() };
-      setMessages(prev => [...prev, aiMsg]);
-      setHistory(h => [...h, { role: 'assistant', content: reply }]);
+    if (updatedMessages) {
+      setMessages(updatedMessages.map(m => ({ ...m, ts: m.timestamp || Date.now() })));
+      loadChats();
     } else {
-      // Remove the user message if API failed
       setMessages(prev => prev.slice(0, -1));
-      setHistory(newHistory.slice(0, -1));
     }
   }
 
-  function clearChat() {
-    setMessages([]);
-    setHistory([]);
-    setError('');
+  function handleSelectChat(id) {
+    setChatId(id);
+    const chat = chats.find(c => c._id === id);
+    if (chat) {
+      fetchChat(id);
+    }
+  }
+
+  async function fetchChat(id) {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chats/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const chat = await res.json();
+        setMessages(chat.messages.map(m => ({ ...m, ts: m.timestamp || Date.now() })));
+        setModel(chat.model);
+      }
+    } catch (err) {
+      console.error('Failed to fetch chat:', err);
+    }
+  }
+
+  async function handleDeleteChat(id) {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chats/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        if (chatId === id) {
+          setChatId(null);
+          setMessages([]);
+        }
+        loadChats();
+      }
+    } catch (err) {
+      console.error('Failed to delete chat:', err);
+    }
+  }
+
+  if (!token) {
+    return <AuthModal onAuth={handleAuth} />;
   }
 
   return (
     <div className="app">
-      {/* Animated background */}
       <div className="bg-grid" />
       <div className="bg-orb orb1" />
       <div className="bg-orb orb2" />
 
-      <div className="chat-container">
-        <Header
-          apiKey={apiKey}
-          setApiKey={setApiKey}
-          model={model}
-          setModel={setModel}
-          onClear={clearChat}
-          hasMessages={messages.length > 0}
+      <ChatSidebar
+        chats={chats}
+        activeChat={chatId}
+        onSelectChat={handleSelectChat}
+        onNewChat={() => {
+          setChatId(null);
+          setMessages([]);
+          setInput('');
+        }}
+        onDeleteChat={handleDeleteChat}
+        username={username}
+        onLogout={handleLogout}
+        onOpenSettings={() => setShowSettings(true)}
+      />
+
+      {showSettings && (
+        <Settings
+          username={username}
+          token={token}
+          userId={userId}
+          onClose={() => setShowSettings(false)}
         />
+      )}
+
+      <div className="chat-container">
+        {chatId && (
+          <Header
+            apiKey={userApiKey}
+            setApiKey={setUserApiKey}
+            model={model}
+            setModel={setModel}
+            onClear={() => {
+              setChatId(null);
+              setMessages([]);
+              setError('');
+            }}
+            hasMessages={messages.length > 0}
+          />
+        )}
 
         <div className="messages-area">
-          {messages.length === 0 ? (
-            <Welcome onSuggestion={handleSend} />
+          {!chatId ? (
+            <Welcome onSuggestion={(text) => {
+              setInput(text);
+            }} />
+          ) : messages.length === 0 ? (
+            <Welcome onSuggestion={(text) => {
+              setInput(text);
+            }} />
           ) : (
             <div className="messages-list">
               {messages.map((msg, i) => (
@@ -98,7 +253,7 @@ export default function App() {
             </div>
           )}
 
-          {messages.length === 0 && error && (
+          {messages.length === 0 && error && !chatId && (
             <div className="error-banner standalone-error">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
@@ -113,7 +268,13 @@ export default function App() {
         <ChatInput
           value={input}
           onChange={setInput}
-          onSend={() => handleSend()}
+          onSend={() => {
+            if (chatId) {
+              handleSend();
+            } else {
+              handleNewChat();
+            }
+          }}
           loading={loading}
         />
       </div>

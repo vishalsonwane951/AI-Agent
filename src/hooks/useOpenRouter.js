@@ -11,48 +11,49 @@ export function useOpenRouter() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const sendMessage = useCallback(async ({ apiKey, model, history, userMessage }) => {
-    setLoading(true);
-    setError('');
+  const sendMessage = useCallback(async ({ apiKey, model, history, userMessage, chatId }) => {
+  setLoading(true);
+  setError('');
 
-    const messages = [
-      ...history,
-      { role: 'user', content: userMessage }
-    ];
+  try {
+    const isNewChat = !chatId;
 
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
+    const res = await fetch(
+      isNewChat
+        ? '/api/chats'
+        : `/api/chats/${chatId}/messages`,
+      {
+        method: isNewChat ? 'POST' : 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': window.location.href,
-          'X-Title': 'Vishal AI Agent',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // your auth token
         },
         body: JSON.stringify({
+          userMessage,
           model,
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
-          temperature: 0.7,
-          max_tokens: 2048,
+          userApiKey: apiKey || undefined, // only send if user provided their own
         }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `API Error ${res.status}`);
       }
+    );
 
-      const data = await res.json();
-      const reply = data?.choices?.[0]?.message?.content;
-      if (!reply) throw new Error('Empty response from API.');
-      return reply;
-    } catch (e) {
-      setError(e.message);
-      return null;
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API Error ${res.status}`);
     }
-  }, []);
+
+    const data = await res.json();
+    const reply = isNewChat ? data.messages.at(-1)?.content : data.assistantMessage;
+
+    if (!reply) throw new Error('Empty response from API.');
+    return { reply, chatId: data.chatId ?? chatId };
+
+  } catch (e) {
+    setError(e.message);
+    return null;
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   return { sendMessage, loading, error, setError };
 }
