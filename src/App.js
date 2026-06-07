@@ -55,14 +55,14 @@ export default function App() {
   }, [messages, loading]);
   console.log("BACKEND URL",process.env.REACT_APP_BACKEND_URL)
   const burl = process.env.REACT_APP_BACKEND_URL;
-  alert(`backend URL:${burl}`)
+  // alert(`backend URL:${burl}`)
 
   async function loadChats() {
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(`fetching chats from ${process.env.REACT_APP_BACKEND_URL}/api/chats, res`)
+      // alert(`fetching chats from ${process.env.REACT_APP_BACKEND_URL}/api/chats, res`)
       if (res.ok) {
         const data = await res.json();
         setChats(data);

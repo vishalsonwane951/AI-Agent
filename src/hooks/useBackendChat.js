@@ -9,7 +9,7 @@ export function useBackendChat() {
     setError('');
   console.log("BACKEND URL",process.env.REACT_APP_BACKEND_URL)
   const burl = process.env.REACT_APP_BACKEND_URL;
-  alert(`backend URL:${burl}`)
+  // alert(`backend URL:${burl}`)
 
     try {
       const res = await fetch(
