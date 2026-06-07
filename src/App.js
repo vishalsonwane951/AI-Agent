@@ -53,6 +53,7 @@ export default function App() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+  console.log("BACKEND URL",process.env.REACT_APP_BACKEND_URL)
 
   async function loadChats() {
     try {
