@@ -7,6 +7,9 @@ export function useBackendChat() {
   const sendMessage = useCallback(async ({ token, chatId, userMessage, userApiKey }) => {
     setLoading(true);
     setError('');
+  console.log("BACKEND URL",process.env.REACT_APP_BACKEND_URL)
+  const burl = process.env.REACT_APP_BACKEND_URL;
+  alert(`backend URL:${burl}`)
 
     try {
       const res = await fetch(
