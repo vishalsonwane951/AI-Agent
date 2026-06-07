@@ -62,6 +62,7 @@ export default function App() {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      alert(`fetching chats from ${process.env.REACT_APP_BACKEND_URL}/api/chats, res`)
       if (res.ok) {
         const data = await res.json();
         setChats(data);
