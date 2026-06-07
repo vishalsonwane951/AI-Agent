@@ -54,6 +54,8 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
   console.log("BACKEND URL",process.env.REACT_APP_BACKEND_URL)
+  const burl = process.env.REACT_APP_BACKEND_URL;
+  alert(`backend URL:${burl}`)
 
   async function loadChats() {
     try {
