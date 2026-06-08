@@ -9,6 +9,9 @@ export const MODELS = [
   { label: 'GPT-4o Mini', value: 'openai/gpt-4o-mini' },
   { label: 'Claude 3 Haiku', value: 'anthropic/claude-3-haiku' },
   { label: 'Claude Sonnet 4.5', value: 'anthropic/claude-sonnet-4-5' },
+  // { label: 'GPT-OSS 20B — Free', value: 'openai/gpt-oss-20b:free' },
+  
+
 ];
 
 export default function Header({ apiKey, setApiKey, model, setModel, onClear, hasMessages }) {
